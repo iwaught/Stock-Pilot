@@ -72,7 +72,11 @@ export async function GET(req: NextRequest) {
       }
 
       const entry = slice[i];
-      const atr = (bb.upper - bb.lower) / 4; // rough ATR proxy
+      // ATR proxy: BB width / 4 ≈ one standard deviation of the band, used as a
+      // rough stop-distance estimate. Note: this differs from the Python engine's
+      // true ATR (which uses high/low/close ranges) and will produce different
+      // backtest results. This in-process fallback is for indicative use only.
+      const atr = (bb.upper - bb.lower) / 4;
       const stopDist = atr * 1.5;
       const riskAmount = balance * RISK_PCT;
       const priceRisk = stopDist;

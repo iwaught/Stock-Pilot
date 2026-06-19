@@ -378,10 +378,11 @@ export function calculateAllIndicators(prices: number[]): TechnicalIndicators {
   const volatility = calculateVolatility(prices);
   const trend = determineTrend(prices, sma20, sma50);
   const bollingerBands = calculateBollingerBands(prices);
-  // ATR approximation: without separate high/low arrays we pass close prices for
-  // all three inputs, which yields TR = 0 for every bar (identical high/low/close).
-  // The result is an ATR ≈ 0, which disables stop-loss/take-profit in the enhanced
-  // signal. For more accurate risk levels, provide a proper OHLCV source.
+  // ATR approximation using close-only data: passing the same close array for
+  // high, low, and close means each bar's true range equals |close[i] - close[i-1]|
+  // (the absolute daily price change). This yields a meaningful volatility estimate
+  // without separate OHLC data. For a more precise ATR, use the Python backend
+  // which has access to real high/low data from yfinance.
   const atr = calculateATR(prices, prices, prices);
 
   return {

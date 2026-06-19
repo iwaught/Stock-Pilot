@@ -55,9 +55,9 @@ class USDCLPMeanReversionStrategy(BaseStrategy):
 
     def generate_signal(self, df: pd.DataFrame) -> Signal:
         """Generate a BUY / SELL / HOLD signal from OHLCV data."""
-        # 26 = minimum bars required for the MACD slow EMA period
-        MIN_BARS = max(self.bb_period, self.atr_period, cfg.MOMENTUM_SLOW_PERIOD)
-        if df.empty or len(df) < MIN_BARS:
+        # Minimum bars needed: largest window among BB period, ATR period, and MACD slow EMA
+        MIN_INDICATOR_BARS = max(self.bb_period, self.atr_period, cfg.MOMENTUM_SLOW_PERIOD)
+        if df.empty or len(df) < MIN_INDICATOR_BARS:
             return self._hold_signal(0.0, "Insufficient data for analysis")
 
         indicators = calculate_all_indicators(

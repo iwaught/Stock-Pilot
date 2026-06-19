@@ -49,9 +49,9 @@ def run_signal_check(notify: bool = True) -> Dict[str, Any]:
     try:
         df_raw = fetch_historical_ohlcv(ticker=cfg.DATA_TICKER, days=cfg.HISTORICAL_DAYS)
         df = clean_ohlcv(df_raw)
-    except Exception as exc:
-        logger.error("Failed to fetch market data: %s", exc)
-        return {"error": str(exc)}
+    except Exception:
+        logger.exception("Failed to fetch market data")
+        return {"error": "Failed to fetch market data. Check server logs."}
 
     mean_rev = USDCLPMeanReversionStrategy()
     momentum = MomentumStrategy()

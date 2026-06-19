@@ -76,7 +76,7 @@ export default function Home() {
 
   // Enhanced signal is derived from indicators + currentRate + strategyConfig.
   // Recomputes automatically whenever any of these change (e.g. config tab save).
-  const enhancedSignalMemo = useMemo(() => {
+  const enhancedSignal = useMemo(() => {
     if (!indicators || !currentRate) return null;
     const atr = indicators.atr ?? 0;
     return generateEnhancedSignal(
@@ -177,9 +177,9 @@ export default function Home() {
             </div>
 
             {/* Enhanced Signal Card (primary) */}
-            {enhancedSignalMemo && (
+            {enhancedSignal && (
               <div className="mb-6">
-                <SignalCard signal={enhancedSignalMemo} title="🎯 Trading Signal" />
+                <SignalCard signal={enhancedSignal} title="🎯 Trading Signal" />
               </div>
             )}
 
