@@ -121,7 +121,7 @@ export default function BacktestResults({ initialResult = null }: BacktestResult
                       <th className="text-left pb-2 pr-4">Date</th>
                       <th className="text-left pb-2 pr-4">Direction</th>
                       <th className="text-right pb-2 pr-4">Entry</th>
-                      <th className="text-right pb-2">P&amp;L</th>
+                      <th className="text-right pb-2">{'P&L'}</th>
                     </tr>
                   </thead>
                   <tbody>

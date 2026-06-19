@@ -15,7 +15,6 @@ import {
   HistoricalRate,
   TechnicalIndicators,
   TradeSignal as TradeSignalType,
-  EnhancedTradeSignal,
   StrategyConfig,
 } from '@/lib/types';
 import {
@@ -40,7 +39,6 @@ export default function Home() {
   const [historicalRates, setHistoricalRates] = useState<HistoricalRate[]>([]);
   const [indicators, setIndicators] = useState<TechnicalIndicators | null>(null);
   const [tradeSignal, setTradeSignal] = useState<TradeSignalType | null>(null);
-  const [enhancedSignal, setEnhancedSignal] = useState<EnhancedTradeSignal | null>(null);
   const [strategyConfig, setStrategyConfig] = useState<StrategyConfig>(DEFAULT_CONFIG);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,17 +63,6 @@ export default function Home() {
         const signal = generateTradeSignal(calculatedIndicators, data.current.rate);
         setTradeSignal(signal);
 
-        // Generate enhanced signal with stop-loss / take-profit
-        const atr = calculatedIndicators.atr ?? 0;
-        const enhanced = generateEnhancedSignal(
-          calculatedIndicators,
-          data.current.rate,
-          atr,
-          strategyConfig.atrStopMultiplier,
-          strategyConfig.atrTargetMultiplier,
-        );
-        setEnhancedSignal(enhanced);
-
         setLoading(false);
       } catch (err) {
         console.error('Error fetching forex data:', err);
@@ -85,8 +72,21 @@ export default function Home() {
     }
 
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Enhanced signal is derived from indicators + currentRate + strategyConfig.
+  // Recomputes automatically whenever any of these change (e.g. config tab save).
+  const enhancedSignalMemo = useMemo(() => {
+    if (!indicators || !currentRate) return null;
+    const atr = indicators.atr ?? 0;
+    return generateEnhancedSignal(
+      indicators,
+      currentRate.rate,
+      atr,
+      strategyConfig.atrStopMultiplier,
+      strategyConfig.atrTargetMultiplier,
+    );
+  }, [indicators, currentRate, strategyConfig]);
 
   // Memoized SMA arrays for chart - calculated incrementally
   const { sma20Data, sma50Data } = useMemo(() => {
@@ -177,9 +177,9 @@ export default function Home() {
             </div>
 
             {/* Enhanced Signal Card (primary) */}
-            {enhancedSignal && (
+            {enhancedSignalMemo && (
               <div className="mb-6">
-                <SignalCard signal={enhancedSignal} title="🎯 Trading Signal" />
+                <SignalCard signal={enhancedSignalMemo} title="🎯 Trading Signal" />
               </div>
             )}
 

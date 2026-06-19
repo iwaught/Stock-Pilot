@@ -100,7 +100,9 @@ def _fetch_from_frankfurter(days: int = 90) -> pd.DataFrame:
     df.set_index("date", inplace=True)
     df.sort_index(inplace=True)
 
-    # Synthesise OHLC columns from Close (Frankfurter only provides close)
+    # Synthesise OHLC columns from Close (Frankfurter only provides daily closes).
+    # High/Low use a ±0.5% approximation of the close — this is a rough estimate
+    # and will produce less accurate backtest results than real OHLC data.
     df["Open"] = df["Close"].shift(1).fillna(df["Close"])
     df["High"] = df["Close"] * 1.005
     df["Low"] = df["Close"] * 0.995

@@ -60,7 +60,7 @@ def run_signal_check(notify: bool = True) -> Dict[str, Any]:
     mom_signal = momentum.generate_signal(df)
 
     result = {
-        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "currentPrice": mr_signal.entry_price or mom_signal.entry_price,
         "meanReversion": mr_signal.to_dict(),
         "momentum": mom_signal.to_dict(),

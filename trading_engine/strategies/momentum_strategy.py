@@ -51,7 +51,9 @@ class MomentumStrategy(BaseStrategy):
 
     def generate_signal(self, df: pd.DataFrame) -> Signal:
         """Generate a signal based on MACD crossovers."""
-        if df.empty or len(df) < self.slow + self.signal_period + 5:
+        # Extra buffer ensures the previous bar's MACD is also available for crossover detection
+        CROSSOVER_BUFFER = 5
+        if df.empty or len(df) < self.slow + self.signal_period + CROSSOVER_BUFFER:
             return self._hold_signal(0.0, "Insufficient data for analysis")
 
         close = df["Close"]

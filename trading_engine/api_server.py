@@ -66,9 +66,9 @@ def get_signals_fresh():
     try:
         result = run_signal_check(notify=notify)
         return jsonify(result)
-    except Exception as exc:
+    except Exception:
         logger.exception("Signal generation failed")
-        return jsonify({"error": str(exc)}), 500
+        return jsonify({"error": "Signal generation failed. Check server logs."}), 500
 
 
 @app.post("/api/strategies/configure")
@@ -87,6 +87,9 @@ def configure_strategy():
         "atrTargetMultiplier": 3.0
     }
     """
+    # NOTE: strategy instances are module-level singletons. This is safe for a
+    # single-worker development server. For multi-worker production deployments,
+    # consider storing config in a database or using Flask application context.
     global _mean_reversion, _momentum
     body = request.get_json(silent=True) or {}
 
@@ -117,8 +120,9 @@ def run_backtest():
 
     try:
         df = _get_market_data(days)
-    except Exception as exc:
-        return jsonify({"error": f"Failed to fetch data: {exc}"}), 500
+    except Exception:
+        logger.exception("Failed to fetch market data for backtest")
+        return jsonify({"error": "Failed to fetch market data. Check server logs."}), 500
 
     strategy = _mean_reversion if strategy_name == "mean_reversion" else _momentum
     result = strategy.backtest(df)
@@ -143,8 +147,9 @@ def market_data():
             "currentPrice": current,
             "historical": historical,
         })
-    except Exception as exc:
-        return jsonify({"error": str(exc)}), 500
+    except Exception:
+        logger.exception("Failed to fetch market data")
+        return jsonify({"error": "Failed to fetch market data. Check server logs."}), 500
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
