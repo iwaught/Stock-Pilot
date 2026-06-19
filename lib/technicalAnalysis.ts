@@ -1,4 +1,4 @@
-import { TechnicalIndicators, TradeSignal } from './types';
+import { TechnicalIndicators, TradeSignal, EnhancedTradeSignal } from './types';
 
 // Default fallback rate when insufficient data is available
 const DEFAULT_FALLBACK_RATE = 850;
@@ -264,6 +264,107 @@ export function generateTradeSignal(indicators: TechnicalIndicators, currentPric
 }
 
 /**
+ * Calculate Bollinger Bands (upper, middle, lower)
+ */
+export function calculateBollingerBands(
+  prices: number[],
+  period: number = 20,
+  stdDev: number = 2.0,
+): { upper: number; middle: number; lower: number } {
+  if (prices.length < period) {
+    const current = prices[prices.length - 1] || DEFAULT_FALLBACK_RATE;
+    return { upper: current * 1.02, middle: current, lower: current * 0.98 };
+  }
+
+  const slice = prices.slice(-period);
+  const mean = slice.reduce((s, p) => s + p, 0) / period;
+  const variance = slice.reduce((s, p) => s + Math.pow(p - mean, 2), 0) / period;
+  const std = Math.sqrt(variance);
+
+  return {
+    upper: parseFloat((mean + stdDev * std).toFixed(2)),
+    middle: parseFloat(mean.toFixed(2)),
+    lower: parseFloat((mean - stdDev * std).toFixed(2)),
+  };
+}
+
+/**
+ * Calculate ATR (Average True Range) from high, low, close arrays.
+ * Falls back to average high-low range when close history is too short.
+ */
+export function calculateATR(
+  highs: number[],
+  lows: number[],
+  closes: number[],
+  period: number = 14,
+): number {
+  const len = Math.min(highs.length, lows.length, closes.length);
+  if (len < 2) return 0;
+
+  const trueRanges: number[] = [];
+  for (let i = 1; i < len; i++) {
+    const tr = Math.max(
+      highs[i] - lows[i],
+      Math.abs(highs[i] - closes[i - 1]),
+      Math.abs(lows[i] - closes[i - 1]),
+    );
+    trueRanges.push(tr);
+  }
+
+  const slice = trueRanges.slice(-period);
+  return parseFloat((slice.reduce((s, v) => s + v, 0) / slice.length).toFixed(2));
+}
+
+/**
+ * Generate an enhanced trade signal with entry price, stop-loss, take-profit
+ * and risk/reward ratio derived from Bollinger Bands and ATR.
+ */
+export function generateEnhancedSignal(
+  indicators: TechnicalIndicators,
+  currentPrice: number,
+  atr: number,
+  atrStopMultiplier: number = 1.5,
+  atrTargetMultiplier: number = 3.0,
+): EnhancedTradeSignal {
+  const base = generateTradeSignal(indicators, currentPrice);
+
+  let stopLoss = 0;
+  let takeProfit = 0;
+  let riskReward = 'N/A';
+
+  if (atr > 0 && base.direction !== 'HOLD') {
+    const stopDist = atr * atrStopMultiplier;
+    const targetDist = atr * atrTargetMultiplier;
+
+    if (base.direction === 'BUY') {
+      stopLoss = parseFloat((currentPrice - stopDist).toFixed(2));
+      takeProfit = parseFloat((currentPrice + targetDist).toFixed(2));
+    } else {
+      stopLoss = parseFloat((currentPrice + stopDist).toFixed(2));
+      takeProfit = parseFloat((currentPrice - targetDist).toFixed(2));
+    }
+
+    const risk = Math.abs(currentPrice - stopLoss);
+    const reward = Math.abs(currentPrice - takeProfit);
+    const ratio = risk > 0 ? (reward / risk).toFixed(1) : '0';
+    riskReward = `1:${ratio}`;
+  }
+
+  return {
+    ...base,
+    entryPrice: parseFloat(currentPrice.toFixed(2)),
+    stopLoss,
+    takeProfit,
+    riskReward,
+    strategy: 'Mean Reversion',
+    confidencePct: base.confidence === 'high' ? 85 : base.confidence === 'medium' ? 65 : 45,
+    holdTime: '4-24 hours',
+    timestamp: new Date().toISOString(),
+    indicators,
+  };
+}
+
+/**
  * Calculate all technical indicators for a given price history
  */
 export function calculateAllIndicators(prices: number[]): TechnicalIndicators {
@@ -276,6 +377,13 @@ export function calculateAllIndicators(prices: number[]): TechnicalIndicators {
   const { support, resistance } = calculateSupportResistance(prices);
   const volatility = calculateVolatility(prices);
   const trend = determineTrend(prices, sma20, sma50);
+  const bollingerBands = calculateBollingerBands(prices);
+  // ATR approximation using close-only data: passing the same close array for
+  // high, low, and close means each bar's true range equals |close[i] - close[i-1]|
+  // (the absolute daily price change). This yields a meaningful volatility estimate
+  // without separate OHLC data. For a more precise ATR, use the Python backend
+  // which has access to real high/low data from yfinance.
+  const atr = calculateATR(prices, prices, prices);
 
   return {
     rsi,
@@ -284,6 +392,8 @@ export function calculateAllIndicators(prices: number[]): TechnicalIndicators {
     ema12,
     ema26,
     macd,
+    bollingerBands,
+    atr,
     support,
     resistance,
     volatility,

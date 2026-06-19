@@ -15,6 +15,8 @@ export interface TechnicalIndicators {
   ema12: number;
   ema26: number;
   macd: { macd: number; signal: number; histogram: number };
+  bollingerBands?: { upper: number; middle: number; lower: number };
+  atr?: number;
   support: number;
   resistance: number;
   volatility: number;
@@ -25,6 +27,48 @@ export interface TradeSignal {
   direction: 'BUY' | 'SELL' | 'HOLD';
   confidence: 'high' | 'medium' | 'low';
   reasoning: string;
+}
+
+export interface EnhancedTradeSignal extends TradeSignal {
+  entryPrice: number;
+  stopLoss: number;
+  takeProfit: number;
+  riskReward: string;
+  strategy: string;
+  confidencePct: number;
+  holdTime: string;
+  timestamp: string;
+  indicators: Partial<TechnicalIndicators>;
+}
+
+export interface BacktestTrade {
+  date: string;
+  direction: 'BUY' | 'SELL';
+  entry: number;
+  pnl: number;
+}
+
+export interface BacktestResult {
+  strategy: string;
+  days: number;
+  initialBalance: number;
+  finalBalance: number;
+  totalReturn: number;
+  totalTrades: number;
+  winRate: number;
+  sharpeRatio: number;
+  maxDrawdown: number;
+  trades: BacktestTrade[];
+}
+
+export interface StrategyConfig {
+  rsiOversold: number;
+  rsiOverbought: number;
+  bbPeriod: number;
+  bbStdDev: number;
+  atrPeriod: number;
+  atrStopMultiplier: number;
+  atrTargetMultiplier: number;
 }
 
 export interface Position {
