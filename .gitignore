@@ -39,3 +39,17 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+trading_engine/.venv/
+trading_engine/venv/
+.venv/
+venv/
+*.egg
